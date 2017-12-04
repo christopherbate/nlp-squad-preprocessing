@@ -26,6 +26,12 @@ class TestSQAUADProcesser(unittest.TestCase):
                 statsLineCount += 1
         self.assertEqual(statsLineCount, count, "Stats file line count does not equal context file.")
 
+        maskLineCount = 0
+        with open('tests/dev.mask', "r",encoding='utf-8') as mask_file:
+            for line in mask_file:
+                maskLineCount += 1
+        self.assertEqual(maskLineCount, count, "Mask file line count does not equal context file line count.")
+
 class TestVocabBuilder(unittest.TestCase):
     def setUp(self):
         self.vocabBuilder = VocabBuilder.VocabBuilder( ['tests/train.context','tests/train.question'], 'tests/vocab.dat' )
@@ -50,20 +56,21 @@ class TestVocabBuilder(unittest.TestCase):
 
 class TestMatrixBuilder(unittest.TestCase):
     def setUp(self):
-        self.vb = VocabBuilder.VocabBuilder( ['tests/train.context', 'tests/train.question'],'tests/vocab.dat')
+        self.vb = VocabBuilder.VocabBuilder(['tests/train.context', \
+            'tests/train.question'], 'tests/vocab.dat')
         self.vb.loadVocab()
-        self.em = EMBuilder.EmbeddingMatrix(self.vb.word_idx_lookup, gloveSize='100',
-                                            vocabFile='tests/vocab.dat',saveLoc='tests/embedding_matrix')
+        self.em = EMBuilder.EmbeddingMatrix(self.vb.word_idx_lookup, gloveSize='100', \
+            vocabFile='tests/vocab.dat',saveLoc='tests/embedding_matrix')
 
     def test_create_and_save(self):
         self.em.buildEmbeddingMatrix()
         loadedArray = np.load('tests/embedding_matrix100.npz')['matrix']
         self.assertEqual(self.em.num_matched, 82275)
-        self.assertEqual(loadedArray.shape,self.em.embedding_matrix.shape)
+        self.assertEqual(loadedArray.shape, self.em.embedding_matrix.shape)
 
     def test_load(self):
         self.em.loadEmbeddingMatrix()
-        self.assertEqual(self.em.embedding_matrix.shape[0],104492)
+        self.assertEqual(self.em.embedding_matrix.shape[0], 104492)
 
 
 
@@ -71,14 +78,14 @@ class ExperimentSetupTest(unittest.TestCase):
     def setUp(self):
         self.vb = VocabBuilder.VocabBuilder( ['tests/train.context', 'tests/train.question'],'tests/vocab.dat')
         self.vb.loadVocab()
-        self.exp = ExperimentSetup.ExperimentSetup(self.vb.word_idx_lookup,
-            wordVecSize='100',maxContextLength=300,maxQuestionLength=10,padZero=True,
-            experimentFolder='tests/exp',dataFolder='tests', train_percent=0.9,
+        self.exp = ExperimentSetup.ExperimentSetup(self.vb.word_idx_lookup, \
+            wordVecSize='100', maxContextLength=300, maxQuestionLength=10, padZero=True, \
+            experimentFolder='tests/exp', dataFolder='tests', train_percent=0.9, \
             shuffleExamples=True, sourceTier="dev")
 
     def getTrainIndices_test(self):
         indices = self.exp.getTrainExIndices(sourceTier="teststats")
-        self.assertEqual(tuple(indices),tuple([0,1,3,4,8]))
+        self.assertEqual(tuple(indices), tuple([0,1,3,4,8]))
 
     def test_creation(self):
         contextArray,questionArray = self.exp.generateExperimentFiles(self.exp.trainIndices,
@@ -105,7 +112,7 @@ class TestFullRun(unittest.TestCase):
         nlp = spacy.load('en')
         print("Splitting files.")
         sp = squad_processer.SQUADProcesser(nlp.tokenizer,data_dir='tests')
-        sp.break_file("dev",sp.devFile,True)
+        sp.break_file("dev", sp.devFile,True)
         print("Building vocab.")
         vb = VocabBuilder.VocabBuilder(['tests/train.context','tests/train.question'],
                                         'tests/vocab.dat')

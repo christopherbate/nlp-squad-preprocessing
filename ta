@@ -1,0 +1,478 @@
+[1mdiff --git a/ExperimentSetup.py b/ExperimentSetup.py[m
+[1mindex 1af574a..d740f3a 100644[m
+[1m--- a/ExperimentSetup.py[m
+[1m+++ b/ExperimentSetup.py[m
+[36m@@ -17,8 +17,8 @@[m [mclass ExperimentSetup:[m
+         self.train_percent = train_percent[m
+         self.wordIdxLookup = wordIdxLookup[m
+         self.npzLoc = os.path.join(dataFolder,'embedding_matrix'+wordVecSize+'.npz')[m
+[31m-        self.embedding_matrix = np.load( self.npzLoc )['matrix'][m
+[31m-        self.numTrainingExamples = self.countTrainingExamples(os.path.join(dataFolder,sourceTier+'.context'))[m
+[32m+[m[32m        self.embedding_matrix = np.load(self.npzLoc)['matrix'][m[41m[m
+[32m+[m[32m        self.numTrainingExamples = self.countTrainingExamples(os.path.join(dataFolder, sourceTier+'.context'))[m[41m[m
+         self.numUnkWordEncountered = 0[m
+         self.padNumber = 0[m
+ [m
+[36m@@ -32,52 +32,67 @@[m [mclass ExperimentSetup:[m
+         indices = self.getTrainExIndices(sourceTier)[m
+         self.numTrainingExamples = len(indices)[m
+         print("Number of qualifying training examples: ", self.numTrainingExamples)[m
+[31m-        if(shuffleExamples== True):[m
+[32m+[m[32m        if shuffleExamples== True:[m[41m[m
+             np.random.shuffle(indices)[m
+             print("Shuffled indices. The first index is now: ", indices[0])[m
+         print("Splitting indices into train and xval groups.")[m
+[31m-        splitPoint = int( self.numTrainingExamples * train_percent)[m
+[32m+[m[32m        splitPoint = int(self.numTrainingExamples * train_percent)[m[41m[m
+         self.finalTrainExCount = splitPoint[m
+         self.trainIndices = indices[:splitPoint][m
+         self.xvalIndices = indices[splitPoint:][m
+[31m-        print(len(self.trainIndices)," training examples and ", len(self.xvalIndices), " x-val examples.")[m
+[32m+[m[32m        print(len(self.trainIndices), " training examples and ", \[m[41m[m
+[32m+[m[32m            len(self.xvalIndices), " x-val examples.")[m[41m[m
+ [m
+     def generateExperimentFiles(self, indices, prefix, sourceTier):[m
+         contextArray = [][m
+         questionArray = [][m
+[32m+[m[32m        maskArray = [][m[41m[m
+         linecache.clearcache()[m
+         with open(os.path.join(self.expFolder, prefix + '.context'), 'w',encoding="utf-8") as context_file,  \[m
+              open(os.path.join(self.expFolder, prefix + '.question'), 'w',encoding="utf-8") as question_file,\[m
+              open(os.path.join(self.expFolder, prefix + '.answer'), 'w', encoding="utf-8") as text_file, \[m
+[31m-             open(os.path.join(self.expFolder, prefix + '.span'), 'w', encoding="utf-8") as span_file:[m
+[31m-             for i in tqdm.tqdm(indices):[m
+[31m-                 contextLine =  linecache.getline(os.path.join(self.dataFolder, sourceTier + '.context'), i+1)[m
+[31m-                 questionLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.question'), i+1)[m
+[31m-                 textLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.answer'), i+1)[m
+[31m-                 spanLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.span'), i+1)[m
+[31m-                 contextLine = self.lineToWordIndices( contextLine )[m
+[31m-                 while( len(contextLine) < self.maxContextLength ):[m
+[31m-                     contextLine.append( self.padNumber )[m
+[32m+[m[32m             open(os.path.join(self.expFolder, prefix + '.span'), 'w', encoding="utf-8") as span_file, \[m[41m[m
+[32m+[m[32m             open(os.path.join(self.expFolder, prefix + '.mask'), 'w', encoding="utf-8") as mask_file:[m[41m[m
+[32m+[m[32m            for i in tqdm.tqdm(indices):[m[41m[m
+[32m+[m[32m                contextLine =  linecache.getline(os.path.join(self.dataFolder, sourceTier + '.context'), i+1)[m[41m[m
+[32m+[m[32m                questionLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.question'), i+1)[m[41m[m
+[32m+[m[32m                textLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.answer'), i+1)[m[41m[m
+[32m+[m[32m                spanLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.span'), i+1)[m[41m[m
+[32m+[m[32m                maskLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.mask'), i+1)[m[41m[m
+[32m+[m[32m                contextLine = self.lineToWordIndices(contextLine)[m[41m[m
+[32m+[m[32m                while len(contextLine) < self.maxContextLength:[m[41m[m
+[32m+[m[32m                    contextLine.append(self.padNumber)[m[41m[m
+ [m
+[31m-                 questionLine = self.lineToWordIndices( questionLine )[m
+[31m-                 while( len(questionLine) < self.maxQuestionLength ):[m
+[31m-                     questionLine.append( self.padNumber )[m
+[32m+[m[32m                questionLine = self.lineToWordIndices(questionLine)[m[41m[m
+[32m+[m[32m                while(len(questionLine) < self.maxQuestionLength):[m[41m[m
+[32m+[m[32m                    questionLine.append(self.padNumber)[m[41m[m
+ [m
+[31m-                 if(len(questionLine) > self.maxQuestionLength or len(contextLine) > self.maxContextLength):[m
+[31m-                     raise ValueError[m
+[32m+[m[32m                maskLine = maskLine.strip().split()[m[41m[m
+[32m+[m[32m                maskLine = list(map(int, maskLine))[m[41m[m
+[32m+[m[32m                while len(maskLine) < self.maxContextLength:[m[41m[m
+[32m+[m[32m                    maskLine.append(0)[m[41m[m
+ [m
+[31m-                 textLine = self.lineToWordIndices( textLine )[m
+[32m+[m[32m                if(len(questionLine) > self.maxQuestionLength or len(contextLine) > self.maxContextLength):[m[41m[m
+[32m+[m[32m                    raise ValueError[m[41m[m
+ [m
+[31m-                 contextArray.append( contextLine )[m
+[31m-                 questionArray.append( questionLine )[m
+[32m+[m[32m                textLine = self.lineToWordIndices( textLine )[m[41m[m
+ [m
+[31m-                 context_file.write( " ".join([str(i) for i in contextLine])+'\n' )[m
+[31m-                 question_file.write( " ".join([str(i) for i in questionLine])+'\n' )[m
+[31m-                 text_file.write( " ".join([str(i) for i in textLine])+'\n' )[m
+[31m-                 span_file.write( spanLine )[m
+[32m+[m[32m                contextArray.append( contextLine )[m[41m[m
+[32m+[m[32m                questionArray.append( questionLine )[m[41m[m
+[32m+[m[32m                maskArray.append( maskLine )[m[41m[m
+ [m
+[31m-        np.save(os.path.join(self.expFolder,prefix+'.contextArray'),np.array(contextArray))[m
+[31m-        np.save(os.path.join(self.expFolder,prefix+'.questionArray'),np.array(questionArray))[m
+[32m+[m[32m                context_file.write( " ".join([str(i) for i in contextLine])+'\n' )[m[41m[m
+[32m+[m[32m                question_file.write( " ".join([str(i) for i in questionLine])+'\n' )[m[41m[m
+[32m+[m[32m                text_file.write( " ".join([str(i) for i in textLine])+'\n' )[m[41m[m
+[32m+[m[32m                span_file.write( spanLine )[m[41m[m
+[32m+[m[32m                mask_file.write(' '.join(str(maskNum) for maskNum in maskLine)+'\n')[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m        np.save(os.path.join(self.expFolder, prefix+'.contextArray'), \[m[41m[m
+[32m+[m[32m            np.array(contextArray))[m[41m[m
+[32m+[m[32m        np.save(os.path.join(self.expFolder, prefix+'.questionArray'), \[m[41m[m
+[32m+[m[32m            np.array(questionArray))[m[41m[m
+[32m+[m[32m        np.save(os.path.join(self.expFolder, prefix+'.maskArray'), \[m[41m[m
+[32m+[m[32m            np.array(maskArray))[m[41m[m
+ [m
+         return np.array(contextArray), np.array(questionArray)[m
+ [m
+[36m@@ -85,7 +100,7 @@[m [mclass ExperimentSetup:[m
+         words = line.strip().split()[m
+         indices = [][m
+         for token in words:[m
+[31m-            if(token in self.wordIdxLookup):[m
+[32m+[m[32m            if token in self.wordIdxLookup:[m[41m[m
+                 indices.append(self.wordIdxLookup[token])[m
+             else:[m
+                 self.numUnkWordEncountered += 1[m
+[36m@@ -96,7 +111,8 @@[m [mclass ExperimentSetup:[m
+     def getTrainExIndices(self, sourceTier="train"):[m
+         contextLengths = [][m
+         questionLengths = [][m
+[31m-        with open(os.path.join(self.dataFolder,sourceTier+".stats"),'r',encoding='utf-8') as stats_file:[m
+[32m+[m[32m        with open(os.path.join(self.dataFolder, sourceTier+".stats"), \[m[41m[m
+[32m+[m[32m            'r', encoding='utf-8') as stats_file:[m[41m[m
+             for line in stats_file:[m
+                 line = line.strip().split(',')[m
+                 contextLengths.append(int(line[0]))[m
+[1mdiff --git a/example_pipeline.py b/example_pipeline.py[m
+[1mindex ab79e5e..f00af77 100644[m
+[1m--- a/example_pipeline.py[m
+[1m+++ b/example_pipeline.py[m
+[36m@@ -9,16 +9,16 @@[m [mif __name__ == '__main__':[m
+     nlp = spacy.load('en')[m
+     data_directory = 'data'[m
+     exp_directory = 'exp'[m
+[31m-    sp = squad_processer.SQUADProcesser(nlp.tokenizer,data_dir=data_directory)[m
+[32m+[m[32m    #sp = squad_processer.SQUADProcesser(nlp.tokenizer,data_dir=data_directory)[m[41m[m
+ [m
+     print("Splitting files.")[m
+[31m-    sp.conduct_preprocess()[m
+[32m+[m[32m    #sp.conduct_preprocess()[m[41m[m
+ [m
+     print("Building vocab.")[m
+     vocabBuilder = VocabBuilder.VocabBuilder(['data/train.context',[m
+                                     'data/train.question'],'data/vocab.dat')[m
+[31m-    vocabBuilder.createVocab()[m
+[31m-    vocabBuilder.saveVocab()[m
+[32m+[m[32m    #vocabBuilder.createVocab()[m[41m[m
+[32m+[m[32m    #vocabBuilder.saveVocab()[m[41m[m
+     vocabBuilder.loadVocab()[m
+ [m
+     print("Building embedding matrices.")[m
+[1mdiff --git a/model1.py b/model1.py[m
+[1mindex 0fb4242..3859b46 100644[m
+[1m--- a/model1.py[m
+[1m+++ b/model1.py[m
+[36m@@ -8,6 +8,7 @@[m [mfrom keras.layers import Input, Dense, LSTM[m
+ from keras.models import Model[m
+ [m
+ if __name__ == '__main__':[m
+[32m+[m[32m    train = False[m
+     nlp = spacy.load('en')[m
+     data_directory = 'data'[m
+     exp_directory = 'exp'[m
+[36m@@ -18,9 +19,9 @@[m [mif __name__ == '__main__':[m
+     vocabBuilder.loadVocab()[m
+ [m
+     print("Loading embedding matrix.")[m
+[31m-    em = EMBuilder.EmbeddingMatrix(vocabBuilder.word_idx_lookup,[m
+[31m-                gloveSize='100',gloveDir='data', vocabFile='data/vocab.dat',[m
+[31m-                saveLoc = 'data/embedding_matrix')[m
+[32m+[m[32m    em = EMBuilder.EmbeddingMatrix(vocabBuilder.word_idx_lookup, \[m
+[32m+[m[32m        gloveSize='100',gloveDir='data', vocabFile='data/vocab.dat', \[m
+[32m+[m[32m        saveLoc = 'data/embedding_matrix')[m
+     em.loadEmbeddingMatrix()[m
+     #print("Matched " , em.num_matched, " words to vectors out of vocab of ",[m
+     #       len(vocabBuilder.vocab))[m
+[36m@@ -34,40 +35,64 @@[m [mif __name__ == '__main__':[m
+ [m
+     context = np.load('exp/train.idx.contextArray.npy')[m
+     question = np.load('exp/train.idx.questionArray.npy')[m
+[31m-    spanArr = [][m
+[31m-    with open('exp/train.idx.answer', 'r',encoding='utf-8') as span_file:[m
+[31m-        for line in span_file:[m
+[31m-            spanArr.append(line.strip().split(' ')[0]);[m
+[31m-    y_train = np.array(spanArr)[m
+[31m-    #y_train = keras.utils.to_categorical(spanArr, num_classes=em.embedding_matrix.shape[0])[m
+[31m-[m
+[32m+[m[32m    truth = np.load('exp/train.idx.maskArray.npy')[m
+ [m
+     # First Keras model - a simple densely connected network to predict a one-word answer[m
+     context_input = Input(shape=(300,), name='context_input')[m
+     question_input = Input(shape=(20,), name='question_input')[m
+[32m+[m
+[32m+[m[32m    # Embedding layers for context and question[m
+     embedding_layer = keras.layers.Embedding( len(vocabBuilder.word_list), 100,weights=[em.embedding_matrix],input_length=300,trainable=False)[m
+     embedding_layer_question = keras.layers.Embedding(len(vocabBuilder.word_list),100,weights=[em.embedding_matrix],input_length=20,trainable=False)[m
+     embedded_sequences_context = embedding_layer(context_input)[m
+     embedded_sequences_question = embedding_layer_question(question_input)[m
+ [m
+     # First, read the question[m
+[31m-    encoder_outputs, state_h, state_c = LSTM(32)(embedded_sequences_question,return_state=True)[m
+[32m+[m[32m    encoder_outputs, state_h, state_c = LSTM(64, return_state=True)(embedded_sequences_question)[m
+[32m+[m
+     # Now, read the paragraph, conditioned on question output.[m
+     encoder_states = [state_h, state_c][m
+[31m-    context_encoder = LSTM(32, return_sequences=True, return_state=True)()[m
+[31m-    #x = keras.layers.Conv1D(128,5,padding="same",activation='relu')(embedded_sequences_context)[m
+[31m-[m
+[31m-    #x = keras.layers.Flatten()(x)[m
+[31m-    #x1 = keras.layers.Conv1D(128,5,padding='same',activation='relu')(embedded_sequences_question)[m
+[32m+[m[32m    context_encoder = LSTM(64)(embedded_sequences_context, initial_state=encoder_states)[m
+ [m
+[31m-    #x1 = keras.layers.Flatten()(embedded_sequences_context)[m
+[31m-    combined = keras.layers.concatenate([x,x1])[m
+     #finalOut = Dense(50,activation='relu')(x)[m
+[31m-    predictions = Dense(len(vocabBuilder.word_list),activation='softmax',name='main_output')(combined)[m
+[31m-[m
+[31m-    print("Training model.")[m
+[32m+[m[32m    intermediate = Dense(300, activation='relu')(context_encoder)[m
+[32m+[m[32m    predictions = Dense(300,activation='sigmoid', name='main_output')(intermediate)[m
+     model = Model(inputs=[context_input,question_input],outputs=predictions)[m
+[31m-    model.compile(optimizer='sgd',loss='sparse_categorical_crossentropy',metrics=['accuracy'])[m
+[31m-    model.fit( {'context_input':context,'question_input':question},{'main_output':y_train},epochs=5,batch_size=32 )[m
+[32m+[m[32m    model.compile(optimizer='sgd',loss='categorical_crossentropy',metrics=['accuracy'])[m
+[32m+[m[32m    if(train):[m
+[32m+[m[32m        print("Training model.")[m
+[32m+[m[32m        model.fit( {'context_input':context,'question_input':question},{'main_output':truth},epochs=5,batch_size=32 )[m
+[32m+[m[32m        model.save_weights('exp/weights.h5')[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m[32m    model.load_weights('exp/weights.h5')[m
+[32m+[m[32m    xValContext = np.load('exp/xval.idx.contextArray.npy')[m
+[32m+[m[32m    xValQuestion = np.load('exp/xval.idx.questionArray.npy')[m
+[32m+[m[32m    xValResults = model.predict({'context_input':xValContext,'question_input':xValQuestion},batch_size=200,verbose=1)[m
+[32m+[m[32m    predTranslated = [][m
+[32m+[m[32m    questTranslated = [][m
+[32m+[m[32m    contTranslated = [][m
+[32m+[m[32m    for i in range(xValResults.shape[0]):[m
+[32m+[m[32m        words = [][m
+[32m+[m[32m        for count, num in enumerate(xValContext[i,:].tolist()):[m
+[32m+[m[32m            words.append(vocabBuilder.word_list[num])[m
+[32m+[m[32m        contTranslated.append(words)[m
+[32m+[m[32m        words = [][m
+[32m+[m[32m        for count, num in enumerate(xValResults[i,:].tolist()):[m
+[32m+[m[32m            if(num>0.5):[m
+[32m+[m[32m                words.append(contTranslated[-1][count])[m
+[32m+[m[32m        predTranslated.append(words)[m
+[32m+[m[32m        words = [][m
+[32m+[m[32m        for count, num in enumerate(xValQuestion[i,:].tolist()):[m
+[32m+[m[32m            if(num==1):[m
+[32m+[m[32m                words.append(vocabBuilder.word_list[num])[m
+[32m+[m[32m        questTranslated.append(words)[m
+ [m
+[31m-    model.save('exp/weights')[m
+[32m+[m[32m    with open("exp/xvalResults.txt","w",encoding='utf-8') as xvalResults:[m
+[32m+[m[32m        for count, line in enumerate(predTranslated):[m
+[32m+[m[32m            contextLine = contTranslated[count][m
+[32m+[m[32m            xvalResults.write('Context: '+' '.join(word for word in contextLine)+'\n')[m
+[32m+[m[32m            questionLine = questTranslated[count][m
+[32m+[m[32m            xvalResults.write('Question: '+' '.join(word for word in questionLine)+'\n')[m
+[32m+[m[32m            xvalResults.write('Answer: '+' '.join(word for word in line)+'\n')[m
+[1mdiff --git a/squad_processer.py b/squad_processer.py[m
+[1mindex 74e49ec..f5425e4 100644[m
+[1m--- a/squad_processer.py[m
+[1m+++ b/squad_processer.py[m
+[36m@@ -2,79 +2,89 @@[m
+ # SQuAD Pre-processing class[m
+ # Adapted from CS224N ass4 code.[m
+ #------------------------------------------------------------------------------[m
+[32m+[m[32mimport os[m[41m[m
+[32m+[m[41m[m
+ import tqdm[m
+ import numpy as np[m
+[31m-import os[m
+ import json[m
+ import matplotlib as mpl[m
+ mpl.use('TkAgg')[m
+ [m
+ class SQUADProcesser():[m
+[31m-    def __init__(self,tokenizer,data_dir='data'):[m
+[32m+[m[32m    def __init__(self, tokenizer, data_dir='data'):[m[41m[m
+         self.data_dir = data_dir[m
+         self.glove_dir = 'data'[m
+         #self.data = None[m
+         self.trainFile = 'train-v1.1.json'[m
+[31m-        self.devFile   = 'dev-v1.1.json'[m
+[32m+[m[32m        self.devFile = 'dev-v1.1.json'[m[41m[m
+         self.outPrefix = "train"[m
+         self.tokenizer = tokenizer[m
+         self.numTrainExamples = 0[m
+[31m-        self.contextLengths = None;[m
+[32m+[m[32m        self.contextLengths = None[m[41m[m
+         self.vocab = {}[m
+ [m
+[31m-    def break_file(self, prefix, filename='train-v1.1.json', countExamples = False):[m
+[32m+[m[32m    def break_file(self, prefix, filename='train-v1.1.json', countExamples=False):[m[41m[m
+         self.load_data(filename)[m
+         self.outPrefix = prefix[m
+[31m-        with open(os.path.join(self.data_dir, self.outPrefix +'.context'), 'w',encoding='utf-8') as context_file, \[m
+[31m-             open(os.path.join(self.data_dir, self.outPrefix +'.question'), 'w',encoding='utf-8') as question_file, \[m
+[31m-             open(os.path.join(self.data_dir, self.outPrefix +'.answer'), 'w',encoding='utf-8') as text_file, \[m
+[31m-             open(os.path.join(self.data_dir, self.outPrefix +'.span'), 'w',encoding='utf-8') as span_file, \[m
+[31m-             open(os.path.join(self.data_dir, self.outPrefix + ".stats"), "w",encoding='utf-8') as stats_file:[m
+[31m-[m
+[32m+[m[32m        with open(os.path.join(self.data_dir, self.outPrefix +'.context'), 'w', encoding='utf-8') as context_file, \[m[41m[m
+[32m+[m[32m             open(os.path.join(self.data_dir, self.outPrefix +'.question'), 'w', encoding='utf-8') as question_file, \[m[41m[m
+[32m+[m[32m             open(os.path.join(self.data_dir, self.outPrefix +'.answer'), 'w', encoding='utf-8') as text_file, \[m[41m[m
+[32m+[m[32m             open(os.path.join(self.data_dir, self.outPrefix +'.span'), 'w', encoding='utf-8') as span_file, \[m[41m[m
+[32m+[m[32m             open(os.path.join(self.data_dir, self.outPrefix + ".stats"), "w", encoding='utf-8') as stats_file, \[m[41m[m
+[32m+[m[32m             open(os.path.join(self.data_dir, self.outPrefix + ".mask"), "w", encoding="utf-8") as mask_file:[m[41m[m
+              # for each article...[m
+[31m-             for aid in tqdm.tqdm(range(len(self.data['data']))):[m
+[31m-                 paragraphs = self.data['data'][aid]['paragraphs'][m
+[32m+[m[32m            for aid in tqdm.tqdm(range(len(self.data['data']))):[m[41m[m
+[32m+[m[32m                paragraphs = self.data['data'][aid]['paragraphs'][m[41m[m
+                  # for each paragraph...[m
+[31m-                 for pid in range(len(paragraphs)):[m
+[31m-                     context = paragraphs[pid]['context'][m
+[31m-                     context = context.strip().replace("\n", " ")[m
+[31m-                     context_tokens = self.tokenizer(context)[m
+[31m-                     # for each question/ans set...[m
+[31m-                     qas = paragraphs[pid]['qas'][m
+[31m-                     for qid in range(len(qas)):[m
+[31m-                         question = qas[qid]['question'][m
+[31m-                         question_tokens = self.tokenizer(question)[m
+[31m-                         # select the to top answer:[m
+[31m-                         ans_id = 0[m
+[31m-                         answer_text = qas[qid]['answers'][ans_id]['text'][m
+[31m-                         answer_tokens = self.tokenizer(answer_text)[m
+[31m-                         answer_start = qas[qid]['answers'][ans_id]['answer_start'][m
+[31m-                         # find the token hat begins with that character.[m
+[31m-                         for token in context_tokens:[m
+[31m-                             if(token.idx == answer_start):[m
+[31m-                                 answer_start = token.i[m
+[31m-                                 break[m
+[31m-                         # write to file.[m
+[31m-                         context_file.write(' '.join(token.string for token in context_tokens)+'\n')[m
+[31m-                         question_file.write(' '.join(token.string for token in question_tokens)+'\n')[m
+[31m-                         text_file.write( ' '.join(token.string for token in answer_tokens)+'\n' )[m
+[31m-                         span_file.write( str(answer_start) +'\n' )[m
+[31m-                         # stats string: num of context tokens, num answer tokens[m
+[31m-                         stats_file.write( str(len(context_tokens)) + ',' + str(len(question_tokens))+'\n')[m
+[31m-                         if(countExamples):[m
+[31m-                             self.numTrainExamples += 1[m
+[32m+[m[32m                for pid in range(len(paragraphs)):[m[41m[m
+[32m+[m[32m                    context = paragraphs[pid]['context'][m[41m[m
+[32m+[m[32m                    context = context.strip().replace("\n", " ")[m[41m[m
+[32m+[m[32m                    context_tokens = self.tokenizer(context)[m[41m[m
+[32m+[m[32m                    # for each question/ans set...[m[41m[m
+[32m+[m[32m                    qas = paragraphs[pid]['qas'][m[41m[m
+[32m+[m[32m                    for qid in range(len(qas)):[m[41m[m
+[32m+[m[32m                        question = qas[qid]['question'][m[41m[m
+[32m+[m[32m                        question_tokens = self.tokenizer(question)[m[41m[m
+[32m+[m[32m                        # select the to top answer:[m[41m[m
+[32m+[m[32m                        ans_id = 0[m[41m[m
+[32m+[m[32m                        answer_text = qas[qid]['answers'][ans_id]['text'][m[41m[m
+[32m+[m[32m                        answer_tokens = self.tokenizer(answer_text)[m[41m[m
+[32m+[m[32m                        answer_start = qas[qid]['answers'][ans_id]['answer_start'][m[41m[m
+[32m+[m[32m                        # find the token hat begins with that character.[m[41m[m
+[32m+[m[32m                        for token in context_tokens:[m[41m[m
+[32m+[m[32m                            if token.idx == answer_start:[m[41m[m
+[32m+[m[32m                                answer_start = token.i[m[41m[m
+[32m+[m[32m                                break[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m                        # Generate the answer "word mask"[m[41m[m
+[32m+[m[32m                        mask = [][m[41m[m
+[32m+[m[32m                        for token in context_tokens:[m[41m[m
+[32m+[m[32m                            if token.i < answer_start:[m[41m[m
+[32m+[m[32m                                mask.append('0')[m[41m[m
+[32m+[m[32m                            elif token.i < (answer_start+len(answer_tokens)):[m[41m[m
+[32m+[m[32m                                mask.append('1')[m[41m[m
+[32m+[m[32m                            else:[m[41m[m
+[32m+[m[32m                                mask.append('0')[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m                        # write to file.[m[41m[m
+[32m+[m[32m                        context_file.write(' '.join(token.string for token in context_tokens)+'\n')[m[41m[m
+[32m+[m[32m                        question_file.write(' '.join(token.string for token \[m[41m[m
+[32m+[m[32m                            in question_tokens)+'\n')[m[41m[m
+[32m+[m[32m                        text_file.write(' '.join(token.string for token in answer_tokens)+'\n')[m[41m[m
+[32m+[m[32m                        span_file.write(str(answer_start) + '\n')[m[41m[m
+[32m+[m[32m                        mask_file.write(' '.join(item for item in mask) +'\n')[m[41m[m
+ [m
+[31m-    def visualizeData(self, filename="data/train.stats"):[m
+[31m-        self.countContextLengths(filename)[m
+[31m-        plt.figure()[m
+[31m-        plt.hist(self.contextLengths,50)[m
+[31m-        plt.show()[m
+[32m+[m[32m                        # stats string: num of context tokens, num answer tokens[m[41m[m
+[32m+[m[32m                        stats_file.write(str(len(context_tokens)) + ',' + \[m[41m[m
+[32m+[m[32m                            str(len(question_tokens))+'\n')[m[41m[m
+[32m+[m[32m                        if countExamples:[m[41m[m
+[32m+[m[32m                            self.numTrainExamples += 1[m[41m[m
+ [m
+     def load_data(self, filename='train-v1.1.json'):[m
+[31m-        full_filepath = os.path.join(self.data_dir,filename)[m
+[32m+[m[32m        full_filepath = os.path.join(self.data_dir, filename)[m[41m[m
+         with open(full_filepath) as datafile:[m
+             self.data = json.load(datafile)[m
+ [m
+     def conduct_preprocess(self):[m
+         self.break_file("train", self.trainFile, True)[m
+[31m-        self.break_file("dev", self.devFile, False )[m
+[32m+[m[32m        self.break_file("dev", self.devFile, False)[m[41m[m
+[1mdiff --git a/tests.py b/tests.py[m
+[1mindex 410eb38..66947ee 100644[m
+[1m--- a/tests.py[m
+[1m+++ b/tests.py[m
+[36m@@ -26,6 +26,12 @@[m [mclass TestSQAUADProcesser(unittest.TestCase):[m
+                 statsLineCount += 1[m
+         self.assertEqual(statsLineCount, count, "Stats file line count does not equal context file.")[m
+ [m
+[32m+[m[32m        maskLineCount = 0[m[41m[m
+[32m+[m[32m        with open('tests/dev.mask', "r",encoding='utf-8') as mask_file:[m[41m[m
+[32m+[m[32m            for line in mask_file:[m[41m[m
+[32m+[m[32m                maskLineCount += 1[m[41m[m
+[32m+[m[32m        self.assertEqual(maskLineCount, count, "Mask file line count does not equal context file line count.")[m[41m[m
+[32m+[m[41m[m
+ class TestVocabBuilder(unittest.TestCase):[m
+     def setUp(self):[m
+         self.vocabBuilder = VocabBuilder.VocabBuilder( ['tests/train.context','tests/train.question'], 'tests/vocab.dat' )[m
+[36m@@ -50,20 +56,21 @@[m [mclass TestVocabBuilder(unittest.TestCase):[m
+ [m
+ class TestMatrixBuilder(unittest.TestCase):[m
+     def setUp(self):[m
+[31m-        self.vb = VocabBuilder.VocabBuilder( ['tests/train.context', 'tests/train.question'],'tests/vocab.dat')[m
+[32m+[m[32m        self.vb = VocabBuilder.VocabBuilder(['tests/train.context', \[m[41m[m
+[32m+[m[32m            'tests/train.question'], 'tests/vocab.dat')[m[41m[m
+         self.vb.loadVocab()[m
+[31m-        self.em = EMBuilder.EmbeddingMatrix(self.vb.word_idx_lookup, gloveSize='100',[m
+[31m-                                            vocabFile='tests/vocab.dat',saveLoc='tests/embedding_matrix')[m
+[32m+[m[32m        self.em = EMBuilder.EmbeddingMatrix(self.vb.word_idx_lookup, gloveSize='100', \[m[41m[m
+[32m+[m[32m            vocabFile='tests/vocab.dat',saveLoc='tests/embedding_matrix')[m[41m[m
+ [m
+     def test_create_and_save(self):[m
+         self.em.buildEmbeddingMatrix()[m
+         loadedArray = np.load('tests/embedding_matrix100.npz')['matrix'][m
+         self.assertEqual(self.em.num_matched, 82275)[m
+[31m-        self.assertEqual(loadedArray.shape,self.em.embedding_matrix.shape)[m
+[32m+[m[32m        self.assertEqual(loadedArray.shape, self.em.embedding_matrix.shape)[m[41m[m
+ [m
+     def test_load(self):[m
+         self.em.loadEmbeddingMatrix()[m
+[31m-        self.assertEqual(self.em.embedding_matrix.shape[0],104492)[m
+[32m+[m[32m        self.assertEqual(self.em.embedding_matrix.shape[0], 104492)[m[41m[m
+ [m
+ [m
+ [m
+[36m@@ -71,14 +78,14 @@[m [mclass ExperimentSetupTest(unittest.TestCase):[m
+     def setUp(self):[m
+         self.vb = VocabBuilder.VocabBuilder( ['tests/train.context', 'tests/train.question'],'tests/vocab.dat')[m
+         self.vb.loadVocab()[m
+[31m-        self.exp = ExperimentSetup.ExperimentSetup(self.vb.word_idx_lookup,[m
+[31m-            wordVecSize='100',maxContextLength=300,maxQuestionLength=10,padZero=True,[m
+[31m-            experimentFolder='tests/exp',dataFolder='tests', train_percent=0.9,[m
+[32m+[m[32m        self.exp = ExperimentSetup.ExperimentSetup(self.vb.word_idx_lookup, \[m[41m[m
+[32m+[m[32m            wordVecSize='100', maxContextLength=300, maxQuestionLength=10, padZero=True, \[m[41m[m
+[32m+[m[32m            experimentFolder='tests/exp', dataFolder='tests', train_percent=0.9, \[m[41m[m
+             shuffleExamples=True, sourceTier="dev")[m
+ [m
+     def getTrainIndices_test(self):[m
+         indices = self.exp.getTrainExIndices(sourceTier="teststats")[m
+[31m-        self.assertEqual(tuple(indices),tuple([0,1,3,4,8]))[m
+[32m+[m[32m        self.assertEqual(tuple(indices), tuple([0,1,3,4,8]))[m[41m[m
+ [m
+     def test_creation(self):[m
+         contextArray,questionArray = self.exp.generateExperimentFiles(self.exp.trainIndices,[m
+[36m@@ -105,7 +112,7 @@[m [mclass TestFullRun(unittest.TestCase):[m
+         nlp = spacy.load('en')[m
+         print("Splitting files.")[m
+         sp = squad_processer.SQUADProcesser(nlp.tokenizer,data_dir='tests')[m
+[31m-        sp.break_file("dev",sp.devFile,True)[m
+[32m+[m[32m        sp.break_file("dev", sp.devFile,True)[m[41m[m
+         print("Building vocab.")[m
+         vb = VocabBuilder.VocabBuilder(['tests/train.context','tests/train.question'],[m
+                                         'tests/vocab.dat')[m

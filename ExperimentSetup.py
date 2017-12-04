@@ -17,8 +17,8 @@ class ExperimentSetup:
         self.train_percent = train_percent
         self.wordIdxLookup = wordIdxLookup
         self.npzLoc = os.path.join(dataFolder,'embedding_matrix'+wordVecSize+'.npz')
-        self.embedding_matrix = np.load( self.npzLoc )['matrix']
-        self.numTrainingExamples = self.countTrainingExamples(os.path.join(dataFolder,sourceTier+'.context'))
+        self.embedding_matrix = np.load(self.npzLoc)['matrix']
+        self.numTrainingExamples = self.countTrainingExamples(os.path.join(dataFolder, sourceTier+'.context'))
         self.numUnkWordEncountered = 0
         self.padNumber = 0
 
@@ -32,52 +32,67 @@ class ExperimentSetup:
         indices = self.getTrainExIndices(sourceTier)
         self.numTrainingExamples = len(indices)
         print("Number of qualifying training examples: ", self.numTrainingExamples)
-        if(shuffleExamples== True):
+        if shuffleExamples== True:
             np.random.shuffle(indices)
             print("Shuffled indices. The first index is now: ", indices[0])
         print("Splitting indices into train and xval groups.")
-        splitPoint = int( self.numTrainingExamples * train_percent)
+        splitPoint = int(self.numTrainingExamples * train_percent)
         self.finalTrainExCount = splitPoint
         self.trainIndices = indices[:splitPoint]
         self.xvalIndices = indices[splitPoint:]
-        print(len(self.trainIndices)," training examples and ", len(self.xvalIndices), " x-val examples.")
+        print(len(self.trainIndices), " training examples and ", \
+            len(self.xvalIndices), " x-val examples.")
 
     def generateExperimentFiles(self, indices, prefix, sourceTier):
         contextArray = []
         questionArray = []
+        maskArray = []
         linecache.clearcache()
         with open(os.path.join(self.expFolder, prefix + '.context'), 'w',encoding="utf-8") as context_file,  \
              open(os.path.join(self.expFolder, prefix + '.question'), 'w',encoding="utf-8") as question_file,\
              open(os.path.join(self.expFolder, prefix + '.answer'), 'w', encoding="utf-8") as text_file, \
-             open(os.path.join(self.expFolder, prefix + '.span'), 'w', encoding="utf-8") as span_file:
-             for i in tqdm.tqdm(indices):
-                 contextLine =  linecache.getline(os.path.join(self.dataFolder, sourceTier + '.context'), i+1)
-                 questionLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.question'), i+1)
-                 textLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.answer'), i+1)
-                 spanLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.span'), i+1)
-                 contextLine = self.lineToWordIndices( contextLine )
-                 while( len(contextLine) < self.maxContextLength ):
-                     contextLine.append( self.padNumber )
+             open(os.path.join(self.expFolder, prefix + '.span'), 'w', encoding="utf-8") as span_file, \
+             open(os.path.join(self.expFolder, prefix + '.mask'), 'w', encoding="utf-8") as mask_file:
+            for i in tqdm.tqdm(indices):
+                contextLine =  linecache.getline(os.path.join(self.dataFolder, sourceTier + '.context'), i+1)
+                questionLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.question'), i+1)
+                textLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.answer'), i+1)
+                spanLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.span'), i+1)
+                maskLine = linecache.getline(os.path.join(self.dataFolder, sourceTier + '.mask'), i+1)
+                contextLine = self.lineToWordIndices(contextLine)
+                while len(contextLine) < self.maxContextLength:
+                    contextLine.append(self.padNumber)
 
-                 questionLine = self.lineToWordIndices( questionLine )
-                 while( len(questionLine) < self.maxQuestionLength ):
-                     questionLine.append( self.padNumber )
+                questionLine = self.lineToWordIndices(questionLine)
+                while(len(questionLine) < self.maxQuestionLength):
+                    questionLine.append(self.padNumber)
 
-                 if(len(questionLine) > self.maxQuestionLength or len(contextLine) > self.maxContextLength):
-                     raise ValueError
+                maskLine = maskLine.strip().split()
+                maskLine = list(map(int, maskLine))
+                while len(maskLine) < self.maxContextLength:
+                    maskLine.append(0)
 
-                 textLine = self.lineToWordIndices( textLine )
+                if(len(questionLine) > self.maxQuestionLength or len(contextLine) > self.maxContextLength):
+                    raise ValueError
 
-                 contextArray.append( contextLine )
-                 questionArray.append( questionLine )
+                textLine = self.lineToWordIndices( textLine )
 
-                 context_file.write( " ".join([str(i) for i in contextLine])+'\n' )
-                 question_file.write( " ".join([str(i) for i in questionLine])+'\n' )
-                 text_file.write( " ".join([str(i) for i in textLine])+'\n' )
-                 span_file.write( spanLine )
+                contextArray.append( contextLine )
+                questionArray.append( questionLine )
+                maskArray.append( maskLine )
 
-        np.save(os.path.join(self.expFolder,prefix+'.contextArray'),np.array(contextArray))
-        np.save(os.path.join(self.expFolder,prefix+'.questionArray'),np.array(questionArray))
+                context_file.write( " ".join([str(i) for i in contextLine])+'\n' )
+                question_file.write( " ".join([str(i) for i in questionLine])+'\n' )
+                text_file.write( " ".join([str(i) for i in textLine])+'\n' )
+                span_file.write( spanLine )
+                mask_file.write(' '.join(str(maskNum) for maskNum in maskLine)+'\n')
+
+        np.save(os.path.join(self.expFolder, prefix+'.contextArray'), \
+            np.array(contextArray))
+        np.save(os.path.join(self.expFolder, prefix+'.questionArray'), \
+            np.array(questionArray))
+        np.save(os.path.join(self.expFolder, prefix+'.maskArray'), \
+            np.array(maskArray))
 
         return np.array(contextArray), np.array(questionArray)
 
@@ -85,7 +100,7 @@ class ExperimentSetup:
         words = line.strip().split()
         indices = []
         for token in words:
-            if(token in self.wordIdxLookup):
+            if token in self.wordIdxLookup:
                 indices.append(self.wordIdxLookup[token])
             else:
                 self.numUnkWordEncountered += 1
@@ -96,7 +111,8 @@ class ExperimentSetup:
     def getTrainExIndices(self, sourceTier="train"):
         contextLengths = []
         questionLengths = []
-        with open(os.path.join(self.dataFolder,sourceTier+".stats"),'r',encoding='utf-8') as stats_file:
+        with open(os.path.join(self.dataFolder, sourceTier+".stats"), \
+            'r', encoding='utf-8') as stats_file:
             for line in stats_file:
                 line = line.strip().split(',')
                 contextLengths.append(int(line[0]))

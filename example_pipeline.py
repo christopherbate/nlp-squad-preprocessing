@@ -9,16 +9,16 @@ if __name__ == '__main__':
     nlp = spacy.load('en')
     data_directory = 'data'
     exp_directory = 'exp'
-    sp = squad_processer.SQUADProcesser(nlp.tokenizer,data_dir=data_directory)
+    #sp = squad_processer.SQUADProcesser(nlp.tokenizer,data_dir=data_directory)
 
     print("Splitting files.")
-    sp.conduct_preprocess()
+    #sp.conduct_preprocess()
 
     print("Building vocab.")
     vocabBuilder = VocabBuilder.VocabBuilder(['data/train.context',
                                     'data/train.question'],'data/vocab.dat')
-    vocabBuilder.createVocab()
-    vocabBuilder.saveVocab()
+    #vocabBuilder.createVocab()
+    #vocabBuilder.saveVocab()
     vocabBuilder.loadVocab()
 
     print("Building embedding matrices.")
