@@ -3,6 +3,7 @@ import VocabBuilder
 import EMBuilder
 import ExperimentSetup
 import spacy
+import numpy as np
 
 if __name__ == '__main__':
     nlp = spacy.load('en')
@@ -26,8 +27,8 @@ if __name__ == '__main__':
                 saveLoc = 'data/embedding_matrix')
     em.buildEmbeddingMatrix()
 
-    context = np.load('exp/train.idx.contextArray.npy')
-    question = np.load('exp/train.idx.questionArray.npy')
+    #context = np.load('exp/train.idx.contextArray.npy')
+    #question = np.load('exp/train.idx.questionArray.npy')
 
     print("Matched " , em.num_matched, " words to vectors out of vocab of ",
            len(vocabBuilder.vocab))
